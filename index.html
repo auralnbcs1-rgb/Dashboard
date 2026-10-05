@@ -513,7 +513,8 @@ const cfg = window.AURAL_CONFIG || {};
 if(!cfg.SUPABASE_URL || cfg.SUPABASE_URL.includes("TU-PROYECTO")){
   $("notice").hidden=false; $("notice").textContent="Falta configurar Supabase: edita config.js con la URL y la anon key de tu proyecto.";
 }
-const sb = window.supabase.createClient(cfg.SUPABASE_URL||"https://invalid.supabase.co", cfg.SUPABASE_ANON_KEY||"x");
+const cleanUrl = (cfg.SUPABASE_URL||"").trim().replace(/\/rest\/v1\/?$/,"").replace(/\/+$/,"");
+const sb = window.supabase.createClient(cleanUrl||"https://invalid.supabase.co", cfg.SUPABASE_ANON_KEY||"x");
 function explain(e){
   const m=(e&&(e.message||e.msg||e.hint))||String(e);
   if(/Invalid API key|No API key|JWT|apikey/i.test(m)) return "La anon key de config.js no es válida. Cópiala de nuevo desde Supabase → Project Settings → API Keys.";
