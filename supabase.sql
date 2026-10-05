@@ -10,10 +10,14 @@ create table if not exists public.pautas (
   inversion   numeric not null default 0 check (inversion >= 0),
   leads       integer not null default 0 check (leads >= 0),
   agendados   integer not null default 0 check (agendados >= 0),
+  asistieron  integer not null default 0 check (asistieron >= 0),
+  perdida     integer not null default 0 check (perdida >= 0),
   ventas      integer not null default 0 check (ventas >= 0),
   ingresos    numeric check (ingresos >= 0),
   actualizado timestamptz not null default now(),
   constraint agendados_menor_leads check (agendados <= leads),
+  constraint asistieron_menor_agendados check (asistieron <= agendados),
+  constraint perdida_menor_asistieron   check (perdida <= asistieron),
   constraint ventas_menor_leads   check (ventas <= leads)
 );
 

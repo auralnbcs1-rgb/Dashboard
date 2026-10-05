@@ -3,7 +3,8 @@
 Archivos:
 - `index.html` — el tablero (acceso abierto, sin clave).
 - `config.js` — URL y anon key de Supabase (lo único que debes editar).
-- `supabase.sql` — crea la tabla `pautas` con acceso abierto.
+- `supabase.sql` — crea la tabla `pautas` con acceso abierto (instalación nueva).
+- `actualizacion-asistencia.sql` — agrega Asistieron y Con pérdida a una tabla que ya existe.
 
 ## 1. Supabase (5 min)
 1. Puedes usar el mismo proyecto de la agenda o crear uno nuevo en supabase.com.
