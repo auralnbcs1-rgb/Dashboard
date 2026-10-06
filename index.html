@@ -99,7 +99,7 @@ select,input{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);b
 .tabs button{border:0;background:transparent;padding:6px 12px;font-size:12.5px;color:var(--muted);border-radius:7px}
 .tabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(4,30,66,.12)}
 .tablewrap{overflow-x:auto;margin-inline:-18px;padding-inline:18px}
-table{border-collapse:collapse;width:100%;min-width:1000px;font-size:13px}
+table{border-collapse:collapse;width:100%;min-width:1100px;font-size:13px}
 th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none;padding-inline:8px}
 th:first-child,td:first-child{text-align:left}
 th[aria-sort]::after{content:" ↓";color:var(--accent)}
@@ -205,7 +205,7 @@ form.entry .preview b{color:var(--ink);font-variant-numeric:tabular-nums}
       <div class="field"><label for="f-asistieron">Asistieron</label><input id="f-asistieron" type="number" inputmode="numeric" min="0" step="1" required></div>
       <div class="field"><label for="f-perdida">Con pérdida auditiva</label><input id="f-perdida" type="number" inputmode="numeric" min="0" step="1" required></div>
       <div class="field"><label for="f-ventas">Compraron</label><input id="f-ventas" type="number" inputmode="numeric" min="0" step="1" required></div>
-      <div class="field"><label for="f-ingresos">Ventas en COP <span class="opt">(opcional)</span></label><input id="f-ingresos" type="number" inputmode="numeric" min="0" step="1"></div>
+      <div class="field"><label for="f-ingresos">Valor total de ventas (COP)</label><input id="f-ingresos" type="number" inputmode="numeric" min="0" step="1"></div>
       <div class="preview" id="f-preview"></div>
       <div class="actions">
         <button type="submit" class="primary" id="f-save">Guardar pauta</button>
@@ -258,6 +258,7 @@ function agg(rows){
   s.pctVenLead = div(s.ven,s.leads);
   s.cac = div(s.inv,s.ven);
   s.roas = s.ing>0 ? div(s.ing,s.inv) : null;
+  s.ticket = s.ing>0 ? div(s.ing,s.ven) : null;
   return s;
 }
 
@@ -316,7 +317,7 @@ function renderKpis(s){
     k("Costo por asistente", cop(s.cpAsi), "cada paciente que llegó", "inversión ÷ asistieron", false) +
     k("Compraron", int(s.ven), pct(s.pctVenPer) + " de los que tienen pérdida · " + pct(s.pctVenLead) + " de los leads", "compras ÷ con pérdida", false) +
     k("Costo por lead que compra", cop(s.cac), "inversión total por cada compra", "inversión ÷ compras", true) +
-    k("Retorno (ROAS)", s.roas!=null ? s.roas.toLocaleString("es-CO",{maximumFractionDigits:1})+"×" : "—", s.roas!=null ? cop(s.ing)+" vendidos" : "Agrega ventas en COP para verlo", "ventas COP ÷ inversión", false);
+    k("Ventas totales", s.ing>0 ? copShort(s.ing) : "$0", s.ing>0 ? cop(s.ing) + (s.ticket!=null?" · ticket "+cop(s.ticket):"") : "Registra las ventas en COP de cada pauta", s.roas!=null ? "ROAS "+s.roas.toLocaleString("es-CO",{maximumFractionDigits:1})+"× · ventas ÷ inversión" : "", false);
 }
 
 /* ---------- embudo ---------- */
@@ -335,7 +336,7 @@ function renderFunnel(s){
     ${step("Con pérdida", s.per, "var(--f3)")}
     ${conv(`<b>${pct(s.pctVenPer)}</b> de los que tienen pérdida compra`)}
     ${step("Compraron", s.ven, "var(--f3)")}
-    ${conv(`Cada compra costó <b>${cop(s.cac)}</b> en pauta · CPL <b>${cop(s.cpl)}</b>`)}
+    ${conv(`Cada compra costó <b>${cop(s.cac)}</b> en pauta${s.ing>0?` · ventas <b>${cop(s.ing)}</b>`:""}`)}
   </div>`;
 }
 
@@ -381,7 +382,7 @@ const COLS=[
   {k:"inversion",l:"Inversión"},{k:"leads",l:"Leads"},{k:"cpl",l:"CPL"},
   {k:"agendados",l:"Agendados"},{k:"cpa",l:"Costo / agendado"},
   {k:"asistieron",l:"Asistieron"},{k:"perdida",l:"Con pérdida"},
-  {k:"ventas",l:"Compraron"},{k:"pctVenLead",l:"% lead → compra"},{k:"cac",l:"Costo / compra"}
+  {k:"ventas",l:"Compraron"},{k:"ingresos",l:"Ventas COP"},{k:"pctVenLead",l:"% lead → compra"},{k:"cac",l:"Costo / compra"}
 ];
 function chipFor(v, avg){
   if(v==null||avg==null) return `<span class="chip">${cop(v)}</span>`;
@@ -408,7 +409,7 @@ function renderTable(){
       return {label: g==="mes"?mesLabel(k):k, sortLabel:k, meta:extra, s:agg(rs)};
     });
   }
-  const sv=(it,k)=>({inversion:it.s.inv,leads:it.s.leads,agendados:it.s.ag,asistieron:it.s.asi,perdida:it.s.per,ventas:it.s.ven,cpl:it.s.cpl,pctAg:it.s.pctAg,cpa:it.s.cpa,pctVenLead:it.s.pctVenLead,cac:it.s.cac,name:it.sortLabel??it.label}[k]);
+  const sv=(it,k)=>({inversion:it.s.inv,leads:it.s.leads,agendados:it.s.ag,asistieron:it.s.asi,perdida:it.s.per,ventas:it.s.ven,ingresos:it.s.ing,cpl:it.s.cpl,pctAg:it.s.pctAg,cpa:it.s.cpa,pctVenLead:it.s.pctVenLead,cac:it.s.cac,name:it.sortLabel??it.label}[k]);
   const {key:sk,dir}=state.sort;
   items.sort((a,b)=>{const x=sv(a,sk),y=sv(b,sk); if(x==null) return 1; if(y==null) return -1; return (typeof x==="string"? x.localeCompare(y,"es") : x-y)*dir;});
   const head = {pauta:"Pauta",sede:"Sede",plataforma:"Plataforma",mes:"Mes",registro:"Registro"}[g];
@@ -422,10 +423,10 @@ function renderTable(){
       <td>${cop(s.inv)}</td><td>${int(s.leads)}</td><td>${chipFor(s.cpl,total.cpl)}</td>
       <td>${int(s.ag)}<span class="pct">${pct(s.pctAg)}</span></td><td>${chipFor(s.cpa,total.cpa)}</td>
       <td>${int(s.asi)}<span class="pct">${pct(s.pctAsi)}</span></td><td>${int(s.per)}<span class="pct">${pct(s.pctPer)}</span></td>
-      <td>${int(s.ven)}</td><td>${pct(s.pctVenLead)}</td><td>${chipFor(s.cac,total.cac)}</td>${acts}</tr>`;
+      <td>${int(s.ven)}</td><td>${s.ing>0?cop(s.ing):"—"}</td><td>${pct(s.pctVenLead)}</td><td>${chipFor(s.cac,total.cac)}</td>${acts}</tr>`;
   };
   wrap.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${items.map(row).join("")}</tbody>
-    <tfoot><tr><td>Total filtrado</td><td>${cop(total.inv)}</td><td>${int(total.leads)}</td><td>${cop(total.cpl)}</td><td>${int(total.ag)}<span class="pct">${pct(total.pctAg)}</span></td><td>${cop(total.cpa)}</td><td>${int(total.asi)}<span class="pct">${pct(total.pctAsi)}</span></td><td>${int(total.per)}<span class="pct">${pct(total.pctPer)}</span></td><td>${int(total.ven)}</td><td>${pct(total.pctVenLead)}</td><td>${cop(total.cac)}</td>${g==="registro"&&canWrite?"<td></td>":""}</tr></tfoot></table>`;
+    <tfoot><tr><td>Total filtrado</td><td>${cop(total.inv)}</td><td>${int(total.leads)}</td><td>${cop(total.cpl)}</td><td>${int(total.ag)}<span class="pct">${pct(total.pctAg)}</span></td><td>${cop(total.cpa)}</td><td>${int(total.asi)}<span class="pct">${pct(total.pctAsi)}</span></td><td>${int(total.per)}<span class="pct">${pct(total.pctPer)}</span></td><td>${int(total.ven)}</td><td>${total.ing>0?cop(total.ing):"—"}</td><td>${pct(total.pctVenLead)}</td><td>${cop(total.cac)}</td>${g==="registro"&&canWrite?"<td></td>":""}</tr></tfoot></table>`;
 }
 
 function renderAll(){
@@ -463,7 +464,7 @@ function readForm(){
 }
 function updatePreview(){
   const r=readForm(); const s=agg([r]);
-  $("f-preview").innerHTML = `<span>CPL <b>${cop(s.cpl)}</b></span><span>Agendados <b>${pct(s.pctAg)}</b></span><span>Costo/agendado <b>${cop(s.cpa)}</b></span><span>Asistencia <b>${pct(s.pctAsi)}</b></span><span>Con pérdida <b>${pct(s.pctPer)}</b></span><span>Lead → compra <b>${pct(s.pctVenLead)}</b></span><span>Costo/lead que compra <b>${cop(s.cac)}</b></span>`;
+  $("f-preview").innerHTML = `<span>CPL <b>${cop(s.cpl)}</b></span><span>Agendados <b>${pct(s.pctAg)}</b></span><span>Costo/agendado <b>${cop(s.cpa)}</b></span><span>Asistencia <b>${pct(s.pctAsi)}</b></span><span>Con pérdida <b>${pct(s.pctPer)}</b></span><span>Lead → compra <b>${pct(s.pctVenLead)}</b></span><span>Costo/lead que compra <b>${cop(s.cac)}</b></span><span>Ventas <b>${s.ing>0?cop(s.ing):"—"}</b></span><span>ROAS <b>${s.roas!=null?s.roas.toLocaleString("es-CO",{maximumFractionDigits:1})+"×":"—"}</b></span>`;
 }
 $("entry").addEventListener("input",updatePreview);
 function validate(r){
@@ -513,10 +514,10 @@ let tt; function toast(m){ const t=$("toast"); t.textContent=m; t.hidden=false; 
 /* ---------- exportar ---------- */
 $("btn-export").addEventListener("click",async()=>{
   const rows=filtered(); if(!rows.length){ toast("No hay registros para exportar"); return; }
-  const head=["Pauta","Plataforma","Mes","Sede","Inversion","Leads","Agendados","Asistieron","Con perdida","Compraron","Ventas COP","CPL","% Agendados","Costo por agendado","% Asistencia","% Con perdida","Costo por asistente","% Lead a compra","Costo por lead que compra"];
+  const head=["Pauta","Plataforma","Mes","Sede","Inversion","Leads","Agendados","Asistieron","Con perdida","Compraron","Ventas COP","CPL","% Agendados","Costo por agendado","% Asistencia","% Con perdida","Costo por asistente","% Lead a compra","Costo por lead que compra","Ticket promedio","ROAS"];
   const q=v=>{const s=String(v??""); return /[",;\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   const r2=v=>v==null?"":Math.round(v); const p2=v=>v==null?"":(v*100).toFixed(1);
-  const lines=[head.join(",")].concat(rows.map(r=>{const s=agg([r]); return [r.nombre,r.plataforma,r.mes,r.sede,r.inversion,r.leads,r.agendados,r.asistieron??0,r.perdida??0,r.ventas,r.ingresos??"",r2(s.cpl),p2(s.pctAg),r2(s.cpa),p2(s.pctAsi),p2(s.pctPer),r2(s.cpAsi),p2(s.pctVenLead),r2(s.cac)].map(q).join(",");}));
+  const lines=[head.join(",")].concat(rows.map(r=>{const s=agg([r]); return [r.nombre,r.plataforma,r.mes,r.sede,r.inversion,r.leads,r.agendados,r.asistieron??0,r.perdida??0,r.ventas,r.ingresos??"",r2(s.cpl),p2(s.pctAg),r2(s.cpa),p2(s.pctAsi),p2(s.pctPer),r2(s.cpAsi),p2(s.pctVenLead),r2(s.cac),r2(s.ticket),s.roas==null?"":s.roas.toFixed(2)].map(q).join(",");}));
   if(!downloads){ toast("La descarga no está disponible en esta vista"); return; }
   try{ await downloads.save({filename:"pautas-aural.csv", data:"﻿"+lines.join("\n")}); }
   catch(ex){ if(ex?.code!=="declined") toast("No se pudo exportar"); }
@@ -535,7 +536,8 @@ const sb = window.supabase.createClient(cleanUrl||"https://invalid.supabase.co",
 function explain(e){
   const m=(e&&(e.message||e.msg||e.hint))||String(e);
   if(/Invalid API key|No API key|JWT|apikey/i.test(m)) return "La anon key de config.js no es válida. Cópiala de nuevo desde Supabase → Project Settings → API Keys.";
-  if(/Could not find the table|relation .*pautas.* does not exist|schema cache/i.test(m)) return "La tabla 'pautas' no existe todavía. Ejecuta supabase.sql en el SQL Editor de Supabase.";
+  if(/column/i.test(m) && /asistieron|perdida/i.test(m)) return "Faltan las columnas Asistieron y Con pérdida en Supabase. Ejecuta actualizacion-asistencia.sql en el SQL Editor.";
+  if(/Could not find the table|relation .*pautas.* does not exist/i.test(m)) return "La tabla 'pautas' no existe todavía. Ejecuta supabase.sql en el SQL Editor de Supabase.";
   if(/row-level security/i.test(m)) return "Supabase bloqueó el registro por permisos. Ejecuta de nuevo supabase.sql completo.";
   if(/Failed to fetch|NetworkError|ERR_NAME/i.test(m)) return "No se pudo conectar a Supabase. Revisa la SUPABASE_URL de config.js.";
   if(/check constraint/i.test(m)) return "Algún dato no cumple las reglas (revisa que cada paso del embudo no supere al anterior).";
