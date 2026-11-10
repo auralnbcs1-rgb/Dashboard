@@ -189,6 +189,7 @@ form.entry .preview b{color:var(--ink);font-variant-numeric:tabular-nums}
       </div>
     </div>
     <div class="legend"><span><span class="chip good">más barato</span> 15 % o más por debajo del promedio filtrado</span><span><span class="chip bad">más caro</span> 15 % o más por encima</span></div>
+    <div class="notice" id="table-msg" role="alert" hidden></div>
     <div class="tablewrap" id="tablewrap"></div>
   </section>
 
@@ -417,7 +418,7 @@ function renderTable(){
   const row = it => {
     const s=it.s;
     const acts = g==="registro"&&canWrite ? `<td><div class="rowacts">${state.confirmDel===it.id
-        ? `<button class="ghost danger" data-del-yes="${it.id}">Eliminar</button><button class="ghost" data-del-no="1">No</button>`
+        ? `<button class="ghost danger" data-del-yes="${it.id}">Sí, eliminar</button><button class="ghost" data-del-no="1">Cancelar</button>`
         : `<button class="ghost" data-edit="${it.id}">Editar</button><button class="ghost danger" data-del="${it.id}">Borrar</button>`}</div></td>` : "";
     return `<tr><td><span class="name">${esc(it.label)}</span><span class="meta">${esc(it.meta)}</span></td>
       <td>${cop(s.inv)}</td><td>${int(s.leads)}</td><td>${chipFor(s.cpl,total.cpl)}</td>
@@ -447,8 +448,8 @@ $("tablewrap").addEventListener("click",async e=>{
   else if(b.dataset.delNo){ state.confirmDel=null; renderTable(); }
   else if(b.dataset.delYes){
     const id=b.dataset.delYes; state.confirmDel=null;
-    try{ await db.collection("pautas").doc(id).delete(); toast("Registro eliminado"); if(state.editing===id) resetForm(); }
-    catch(err){ $("notice").hidden=false; $("notice").textContent="No se pudo eliminar. "+(err?.message||"Intenta de nuevo."); toast("No se pudo eliminar"); renderTable(); }
+    try{ await db.collection("pautas").doc(id).delete(); $("table-msg").hidden=true; toast("Registro eliminado"); if(state.editing===id) resetForm(); }
+    catch(err){ $("table-msg").hidden=false; $("table-msg").textContent="No se pudo eliminar. "+(err?.message||"Intenta de nuevo."); toast("No se pudo eliminar"); renderTable(); }
   }
 });
 $("btn-new").addEventListener("click",()=>{ resetForm(); $("form-panel").scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>$("f-nombre").focus({preventScroll:true}),300); });
