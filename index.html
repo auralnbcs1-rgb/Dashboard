@@ -448,7 +448,7 @@ $("tablewrap").addEventListener("click",async e=>{
   else if(b.dataset.delYes){
     const id=b.dataset.delYes; state.confirmDel=null;
     try{ await db.collection("pautas").doc(id).delete(); toast("Registro eliminado"); if(state.editing===id) resetForm(); }
-    catch(err){ toast("No se pudo eliminar: "+(err?.message||err?.code||"error")); renderTable(); }
+    catch(err){ $("notice").hidden=false; $("notice").textContent="No se pudo eliminar. "+(err?.message||"Intenta de nuevo."); toast("No se pudo eliminar"); renderTable(); }
   }
 });
 $("btn-new").addEventListener("click",()=>{ resetForm(); $("form-panel").scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>$("f-nombre").focus({preventScroll:true}),300); });
@@ -552,8 +552,8 @@ const fail = e => { const err=new Error(explain(e)); err.code = /row-level|permi
 db = { collection: () => ({
   add: async body => { const {error}=await sb.from("pautas").insert(body); if(error) throw fail(error); await reload(); },
   doc: id => ({
-    set: async body => { const {error}=await sb.from("pautas").update(body).eq("id",id); if(error) throw fail(error); await reload(); },
-    delete: async () => { const {error}=await sb.from("pautas").delete().eq("id",id); if(error) throw fail(error); await reload(); }
+    set: async body => { const {data,error}=await sb.from("pautas").update(body).eq("id",id).select("id"); if(error) throw fail(error); if(!data||!data.length) throw new Error("Supabase no dejó guardar el cambio (faltan permisos de edición). Ejecuta permisos.sql en el SQL Editor de Supabase."); await reload(); },
+    delete: async () => { const {data,error}=await sb.from("pautas").delete().eq("id",id).select("id"); if(error) throw fail(error); if(!data||!data.length) throw new Error("Supabase no dejó guardar el cambio (faltan permisos de edición). Ejecuta permisos.sql en el SQL Editor de Supabase."); await reload(); }
   })
 })};
 downloads = { save: async ({filename,data}) => {
@@ -569,6 +569,8 @@ async function reload(){
   window.__render(data.map(clean));
 }
 reload();
+window.addEventListener("focus",()=>reload());
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) reload(); });
 sb.channel("pautas-cambios").on("postgres_changes",{event:"*",schema:"public",table:"pautas"},()=>reload()).subscribe();
 })();
 </script>
