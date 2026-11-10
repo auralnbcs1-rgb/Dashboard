@@ -113,7 +113,8 @@ td .meta{font-size:11.5px;color:var(--muted);display:block;white-space:normal}
 .chip.good{background:var(--good-bg);color:var(--good)}
 .chip.bad{background:var(--bad-bg);color:var(--bad)}
 .pct{color:var(--muted);font-size:11.5px;margin-left:4px}
-.rowacts{display:flex;gap:2px;justify-content:flex-end}
+.rowacts{display:flex;gap:6px;justify-content:flex-start;margin-top:6px}
+.rowacts button{padding:4px 10px;border-color:var(--line);font-size:12px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .legend .chip{font-size:11px}
 
@@ -190,6 +191,7 @@ form.entry .preview b{color:var(--ink);font-variant-numeric:tabular-nums}
     </div>
     <div class="legend"><span><span class="chip good">más barato</span> 15 % o más por debajo del promedio filtrado</span><span><span class="chip bad">más caro</span> 15 % o más por encima</span></div>
     <div class="notice" id="table-msg" role="alert" hidden></div>
+    <p class="hint" id="edit-hint">Para editar o borrar, abre la pestaña <b>Registros</b>.</p>
     <div class="tablewrap" id="tablewrap"></div>
   </section>
 
@@ -414,20 +416,20 @@ function renderTable(){
   const {key:sk,dir}=state.sort;
   items.sort((a,b)=>{const x=sv(a,sk),y=sv(b,sk); if(x==null) return 1; if(y==null) return -1; return (typeof x==="string"? x.localeCompare(y,"es") : x-y)*dir;});
   const head = {pauta:"Pauta",sede:"Sede",plataforma:"Plataforma",mes:"Mes",registro:"Registro"}[g];
-  const th = COLS.map(c=>`<th data-k="${c.k}" ${sk===c.k?`aria-sort="${dir>0?"ascending":"descending"}"`:""} scope="col">${c.k==="name"?head:c.l}</th>`).join("") + (g==="registro"&&canWrite?`<th scope="col"></th>`:"");
+  const th = COLS.map(c=>`<th data-k="${c.k}" ${sk===c.k?`aria-sort="${dir>0?"ascending":"descending"}"`:""} scope="col">${c.k==="name"?head:c.l}</th>`).join("") + "";
   const row = it => {
     const s=it.s;
-    const acts = g==="registro"&&canWrite ? `<td><div class="rowacts">${state.confirmDel===it.id
+    const acts = g==="registro"&&canWrite ? `<div class="rowacts">${state.confirmDel===it.id
         ? `<button class="ghost danger" data-del-yes="${it.id}">Sí, eliminar</button><button class="ghost" data-del-no="1">Cancelar</button>`
-        : `<button class="ghost" data-edit="${it.id}">Editar</button><button class="ghost danger" data-del="${it.id}">Borrar</button>`}</div></td>` : "";
-    return `<tr><td><span class="name">${esc(it.label)}</span><span class="meta">${esc(it.meta)}</span></td>
+        : `<button class="ghost" data-edit="${it.id}">Editar</button><button class="ghost danger" data-del="${it.id}">Borrar</button>`}</div>` : "";
+    return `<tr><td><span class="name">${esc(it.label)}</span><span class="meta">${esc(it.meta)}</span>${acts}</td>
       <td>${cop(s.inv)}</td><td>${int(s.leads)}</td><td>${chipFor(s.cpl,total.cpl)}</td>
       <td>${int(s.ag)}<span class="pct">${pct(s.pctAg)}</span></td><td>${chipFor(s.cpa,total.cpa)}</td>
       <td>${int(s.asi)}<span class="pct">${pct(s.pctAsi)}</span></td><td>${int(s.per)}<span class="pct">${pct(s.pctPer)}</span></td>
-      <td>${int(s.ven)}</td><td>${s.ing>0?cop(s.ing):"—"}</td><td>${pct(s.pctVenLead)}</td><td>${chipFor(s.cac,total.cac)}</td>${acts}</tr>`;
+      <td>${int(s.ven)}</td><td>${s.ing>0?cop(s.ing):"—"}</td><td>${pct(s.pctVenLead)}</td><td>${chipFor(s.cac,total.cac)}</td></tr>`;
   };
   wrap.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${items.map(row).join("")}</tbody>
-    <tfoot><tr><td>Total filtrado</td><td>${cop(total.inv)}</td><td>${int(total.leads)}</td><td>${cop(total.cpl)}</td><td>${int(total.ag)}<span class="pct">${pct(total.pctAg)}</span></td><td>${cop(total.cpa)}</td><td>${int(total.asi)}<span class="pct">${pct(total.pctAsi)}</span></td><td>${int(total.per)}<span class="pct">${pct(total.pctPer)}</span></td><td>${int(total.ven)}</td><td>${total.ing>0?cop(total.ing):"—"}</td><td>${pct(total.pctVenLead)}</td><td>${cop(total.cac)}</td>${g==="registro"&&canWrite?"<td></td>":""}</tr></tfoot></table>`;
+    <tfoot><tr><td>Total filtrado</td><td>${cop(total.inv)}</td><td>${int(total.leads)}</td><td>${cop(total.cpl)}</td><td>${int(total.ag)}<span class="pct">${pct(total.pctAg)}</span></td><td>${cop(total.cpa)}</td><td>${int(total.asi)}<span class="pct">${pct(total.pctAsi)}</span></td><td>${int(total.per)}<span class="pct">${pct(total.pctPer)}</span></td><td>${int(total.ven)}</td><td>${total.ing>0?cop(total.ing):"—"}</td><td>${pct(total.pctVenLead)}</td><td>${cop(total.cac)}</td></tr></tfoot></table>`;
 }
 
 function renderAll(){
@@ -438,7 +440,7 @@ function renderAll(){
 
 /* ---------- interacciones ---------- */
 ["flt-desde","flt-hasta","flt-sede","flt-plat","flt-pauta"].forEach(id=>$(id).addEventListener("change",renderAll));
-$("group-tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-g]"); if(!b) return; state.group=b.dataset.g; [...$("group-tabs").children].forEach(x=>x.setAttribute("aria-pressed",x===b)); state.confirmDel=null; renderTable();});
+$("group-tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-g]"); if(!b) return; state.group=b.dataset.g; $("edit-hint").hidden = state.group==="registro"; [...$("group-tabs").children].forEach(x=>x.setAttribute("aria-pressed",x===b)); state.confirmDel=null; renderTable();});
 $("tablewrap").addEventListener("click",async e=>{
   const th=e.target.closest("th[data-k]");
   if(th){ const k=th.dataset.k; state.sort = state.sort.key===k ? {key:k,dir:-state.sort.dir} : {key:k,dir:k==="name"?1:-1}; renderTable(); return; }
